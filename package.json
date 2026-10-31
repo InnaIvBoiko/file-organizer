@@ -1,0 +1,25 @@
+{
+  "name": "file-organizer",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "file-organizer.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "scan": "node file-organizer.js scan",
+    "duplicates": "node file-organizer.js duplicates",
+    "organize": "node file-organizer.js organize",
+    "cleanup": "node file-organizer.js cleanup"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/InnaIvBoiko/file-organizer.git"
+  },
+  "keywords": [],
+  "author": "Inna Boiko",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/InnaIvBoiko/file-organizer/issues"
+  },
+  "homepage": "https://github.com/InnaIvBoiko/file-organizer#readme",
+  "description": "CLI tool to analyze, deduplicate, organize and clean up directories"
+}
