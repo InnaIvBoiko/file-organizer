@@ -21,5 +21,8 @@
     "url": "https://github.com/InnaIvBoiko/file-organizer/issues"
   },
   "homepage": "https://github.com/InnaIvBoiko/file-organizer#readme",
-  "description": "CLI tool to analyze, deduplicate, organize and clean up directories"
+  "description": "CLI tool to analyze, deduplicate, organize and clean up directories",
+  "engines": {
+    "node": ">=18"
+  }
 }
