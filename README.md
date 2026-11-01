@@ -223,6 +223,53 @@ All file system operations are wrapped in `try...catch`. Known error codes get a
 - A problem with a single file or subdirectory (e.g. no permission) → the file is skipped with a warning
   and the command keeps going.
 
+## Screenshots
+
+Real runs on a test directory with duplicates, a 15 MB video (copied via streams) and files
+dated 2025-01-01 to simulate old files.
+
+### `scan`
+
+![scan](images/scan.png)
+
+### `duplicates`
+
+All 11 files are hashed; 3 duplicate groups are found.
+
+![duplicates](images/duplicates.png)
+
+### `organize`
+
+![organize](images/organize.png)
+
+After running `organize` twice, nothing is overwritten — name conflicts get a numeric suffix
+(`lecture(1).pdf`, `lecture(2).pdf`, `video(1).mp4` …):
+
+![organize name conflicts](images/file-organizer.png)
+
+### `cleanup` — dry run
+
+![cleanup dry run](images/DRY_RUN_MODE.png)
+
+### `cleanup --confirm`
+
+![cleanup confirm](images/cleanup.png)
+
+### Error handling
+
+Missing directory (exit code 1), file instead of directory, invalid `--older-than`,
+missing `--output`, unknown command:
+
+![errors](images/error.png)
+
+Unreadable subfolder (`EACCES`) — skipped with a warning, the scan continues:
+
+![permission denied](images/permission_denied.png)
+
+### npm scripts
+
+![npm run scan](images/finish.png)
+
 ## Project structure
 
 ```
@@ -231,6 +278,7 @@ file-organizer/
 ├── .gitignore
 ├── README.md
 ├── file-organizer.js   # entry point: process.argv parsing, console output, progress bar, error handling
+├── images/             # screenshots used in this README
 └── lib/
     ├── scanner.js      # Scanner, getAllFiles() — recursive walk shared by all commands,
     │                   # calculateStatistics() — pure function that builds the scan report
