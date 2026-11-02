@@ -38,15 +38,16 @@ function drawProgressBar(current, total, width = 20) {
 }
 
 function createProgress(label, suffix = '') {
-  let finished = false;
+  let onScreen = false;
   return {
     update(current, total) {
       process.stdout.write(`\r${label} ${drawProgressBar(current, total)}${suffix}`);
+      onScreen = true;
     },
     // End the line so the next output doesn't overwrite the progress bar
     finish() {
-      if (finished) return;
-      finished = true;
+      if (!onScreen) return;
+      onScreen = false;
       process.stdout.write('\n');
     },
   };
@@ -99,6 +100,15 @@ function warnFileError(progress, { path: filePath, error }) {
   console.warn(`⚠️  Skipped — ${describeError(error, filePath)}`);
 }
 
+// Options each command accepts; anything else (e.g. a typo like --confrim) is an error
+const COMMAND_OPTIONS = {
+  scan: ['help'],
+  duplicates: ['help'],
+  organize: ['output', 'help'],
+  cleanup: ['older-than', 'confirm', 'help'],
+};
+const BOOLEAN_OPTIONS = ['confirm', 'help'];
+
 function parseArgs(argv) {
   const [command, ...rest] = argv;
   const positional = [];
@@ -109,7 +119,9 @@ function parseArgs(argv) {
     if (arg.startsWith('--')) {
       const key = arg.slice(2);
       const next = rest[i + 1];
-      if (next !== undefined && !next.startsWith('--')) {
+      if (BOOLEAN_OPTIONS.includes(key)) {
+        options[key] = true;
+      } else if (next !== undefined && !next.startsWith('--')) {
         options[key] = next;
         i++;
       } else {
@@ -133,8 +145,8 @@ async function runScan(directory) {
   scanner.on('files-listed', ({ total }) => progress.update(0, total));
   scanner.on('file-found', ({ processed, total }) => progress.update(processed, total));
   scanner.on('file-error', (data) => {
+    warnFileError(progress, data);
     if (data.total) progress.update(data.processed, data.total);
-    else warnFileError(null, data);
   });
 
   scanner.on('scan-complete', (stats) => {
@@ -190,10 +202,14 @@ async function runDuplicates(directory) {
   finder.on('search-start', ({ directory }) =>
     console.log(`🔍 Searching for duplicates in: ${directory}`),
   );
-  finder.on('hashing-start', ({ total }) => progress.update(0, total));
+  finder.on('hashing-start', ({ totalFiles, total }) => {
+    console.log(`Found ${totalFiles} files, ${total} with matching sizes need hashing`);
+    progress.update(0, total);
+  });
   finder.on('file-processed', ({ processed, total }) => progress.update(processed, total));
   finder.on('file-error', (data) => {
     warnFileError(progress, data);
+    if (data.total) progress.update(data.processed, data.total);
   });
 
   finder.on('duplicates-found', ({ directory, groups, totalWasted }) => {
@@ -356,13 +372,24 @@ async function main() {
     return;
   }
 
-  if (!['scan', 'duplicates', 'organize', 'cleanup'].includes(command)) {
+  if (!Object.hasOwn(COMMAND_OPTIONS, command)) {
     fail(`Unknown command "${command}".\n\n${USAGE}`);
   }
 
-  const [directory] = positional;
+  const unknownOptions = Object.keys(options).filter(
+    (key) => !COMMAND_OPTIONS[command].includes(key),
+  );
+  if (unknownOptions.length > 0) {
+    const list = unknownOptions.map((key) => `--${key}`).join(', ');
+    fail(`Unknown option(s) for "${command}": ${list}\n\n${USAGE}`);
+  }
+
+  const [directory, ...extra] = positional;
   if (!directory) {
     fail(`Missing directory argument for "${command}".\n\n${USAGE}`);
+  }
+  if (extra.length > 0) {
+    fail(`Unexpected argument(s): ${extra.join(' ')}\n\n${USAGE}`);
   }
 
   try {

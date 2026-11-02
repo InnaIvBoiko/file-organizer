@@ -91,8 +91,10 @@ Finds files with identical content (even if their names differ) using a **SHA-25
 The hash is computed with `fs.createReadStream()` chunk by chunk, so large files are never
 loaded into memory in full.
 
-Every file is hashed; files are then grouped in a `Map<hash, { size, filePaths }>` and only
-groups with more than one file are shown.
+Optimization: files are first grouped by size — files of different sizes can't be duplicates,
+so only files sharing a size are hashed (the progress bar counts only those). Empty (0-byte) files
+are ignored. Hashed files are grouped in a `Map<hash, { size, filePaths }>` and only groups with
+more than one file are shown.
 
 Wasted space = file size × (number of copies − 1).
 
@@ -220,6 +222,8 @@ All file system operations are wrapped in `try...catch`. Known error codes get a
 | `EMFILE`, `EBUSY` | Too many open files / Resource busy          |
 
 - A problem with the directory itself or invalid arguments → `❌ Error: ...` message and exit code **1**.
+  This includes unknown options (e.g. a typo like `--confrim`) and unexpected extra arguments,
+  so a mistyped flag never silently changes what a command does.
 - A problem with a single file or subdirectory (e.g. no permission) → the file is skipped with a warning
   and the command keeps going.
 
@@ -234,7 +238,8 @@ dated 2025-01-01 to simulate old files.
 
 ### `duplicates`
 
-All 11 files are hashed; 3 duplicate groups are found.
+3 duplicate groups are found. (This screenshot was taken before the size pre-filter was added,
+so all 11 files were hashed; now only files with matching sizes are.)
 
 ![duplicates](images/duplicates.png)
 
